@@ -100,5 +100,40 @@ namespace water {
 				return integrate_by_sample<(SAMPLE_COUNT + 1) / 2>(f, top_area) + integrate_by_sample<SAMPLE_COUNT / 2>(f, down_area);
 			}
 		}
+
+		template <class F>
+		concept infinite_dimentional_function = requires (F f) {
+			f.next_dimention_function(0);
+			f.is_constant();
+		};
+
+		template<class F>
+		concept integrate_infinite_dimentional_function = requires (F f) {
+			f.next_dimention_function(0);
+			f.is_constant();
+			f.first_integrate_range();
+			f.first_sample_count();
+		};
+		auto integrate(integrate_infinite_dimentional_function auto&& f) {
+			auto range = f.first_integrate_range();
+			auto range_width = range.max() - range.min();
+			if (f.is_constant()) {
+				return range_width * f(0);
+			}
+			else {
+				auto sample_count = f.first_sample_count();
+				auto sample_width = (range.max() - range.min()) / sample_count;
+				auto begin = range.min() + sample_width / 2;
+				auto last = range.max() - sample_width / 2;
+
+				auto sample = begin;
+				auto sum = integrate_by_sample(f.next_dimention_function(sample));
+				while (sample += sample_width, sample <= last) {
+					sum += integrate_by_sample(f.next_dimention_function(sample));
+				}
+
+				return sum / sample_count;
+			}
+		}
 	}
 }
